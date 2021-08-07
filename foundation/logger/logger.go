@@ -1,7 +1,17 @@
 package logger
 
-import "go.uber.org/zap"
+import (
+	"fmt"
+	"os"
 
-func New(service string) *zap.Logger {
-	return nil
+	"go.uber.org/zap"
+)
+
+func New() *zap.Logger {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		fmt.Println("can't create logger instance")
+		os.Exit(1)
+	}
+	return logger
 }

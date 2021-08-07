@@ -1,0 +1,27 @@
+version: '3.7'
+services:
+  backend:
+    # image: ghcr.io/taraktikos/go-service:latest
+    image: bankets-app-amd64:d01b0a1
+    container_name: backend
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - /data:/usr/src/app/data
+    environment:
+      - ENV=PROD
+      - GO_SERVICE_DB_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/go-service
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13-alpine3.14
+    container_name: postgres
+    restart: always
+    environment:
+        POSTGRES_DB: go-service
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+    ports:
+        - 5432:5432
