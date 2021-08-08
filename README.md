@@ -1,5 +1,6 @@
 # go-service
 
+export TF_VAR_ghcr_token=$GHCR_TOKEN
 
 terraform apply
 

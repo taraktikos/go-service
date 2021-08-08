@@ -139,10 +139,15 @@ resource "aws_instance" "bankets_app_server" {
     device_index         = 0
     network_interface_id = aws_network_interface.bankets_web_server_nic.id
   }
-  user_data = file("install.sh")
+  user_data = templatefile("install.sh", {ghcr_token = var.ghcr_token})
   tags = {
     Name = "Bankets app server"
   }
+}
+
+variable "ghcr_token" {
+  description = "The token for the docker registry ghcr.io"
+  type        = string
 }
 
 output "server_public_ip" {
