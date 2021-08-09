@@ -75,7 +75,7 @@ jobs:
           password: ${{ secrets.CONTAINER_REGISTRY_TOKEN }}
 
       - name: Stop old containers
-        run: docker-compose -f ./zarf/docker-compose.prod.yml down
+        run: docker-compose -f ./zarf/docker-compose.prod.yml down backend
 
       - name: Pull latest images
         run: docker-compose -f ./zarf/docker-compose.prod.yml pull
@@ -91,4 +91,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send notification
-        run: curl -i -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_API_KEY }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=Bankets deployed to server http://${{ secrets.SSH_HOST }}"
+        run: curl -i -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_API_KEY }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=go-service deployed to server http://${{ secrets.SSH_HOST }}"
