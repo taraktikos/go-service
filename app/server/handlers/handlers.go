@@ -13,5 +13,5 @@ type Handler struct {
 }
 
 func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("homepage"))
+	w.Write([]byte("homepage22222"))
 }
