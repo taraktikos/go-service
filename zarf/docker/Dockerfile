@@ -19,7 +19,7 @@ CMD ["./server"]
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="go-service-server" \
-      org.opencontainers.image.authors="Tarsa S. <tarassuhovenko@gmail.com>" \
+      org.opencontainers.image.authors="Taras S. <tarassuhovenko@gmail.com>" \
       org.opencontainers.image.source="https://github.com/taraktikos/go-service/app/server" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.vendor="Taras S."
