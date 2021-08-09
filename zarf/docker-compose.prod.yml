@@ -1,8 +1,7 @@
 version: '3.7'
 services:
   backend:
-    # image: ghcr.io/taraktikos/go-service:latest
-    image: bankets-app-amd64:d01b0a1
+    image: ghcr.io/taraktikos/go-service:latest
     container_name: backend
     restart: always
     ports:
