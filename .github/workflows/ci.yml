@@ -51,43 +51,43 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-  # deploy-to-ec2:
-  #   needs: docker-build
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     DOCKER_HOST: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
+  deploy-to-ec2:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_HOST: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-  #     - name: Install SSH key
-  #       uses: shimataro/ssh-key-action@v2
-  #       with:
-  #         key: ${{ secrets.SSH_KEY }}
-  #         known_hosts: ${{ secrets.KNOWN_HOSTS }}
-  #         if_key_exists: fail
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+          if_key_exists: fail
 
-  #     - name: Login to GitHub Container Registry
-  #       uses: docker/login-action@v1
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.repository_owner }}
-  #         password: ${{ secrets.CONTAINER_REGISTRY_TOKEN }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CONTAINER_REGISTRY_TOKEN }}
 
-  #     - name: Stop old containers
-  #       run: docker-compose -f docker-compose.prod.yml down
+      - name: Stop old containers
+        run: docker-compose -f ./zarf/docker-compose.prod.yml down
 
-  #     - name: Pull latest images
-  #       run: docker-compose -f docker-compose.prod.yml pull
+      - name: Pull latest images
+        run: docker-compose -f ./zarf/docker-compose.prod.yml pull
 
-  #     - name: Docker compose up
-  #       run: docker-compose -f docker-compose.prod.yml up -d
+      - name: Docker compose up
+        run: docker-compose -f ./zarf/docker-compose.prod.yml up -d
 
-  #     - name: Remove unused images
-  #       run: docker image prune -a -f
+      - name: Remove unused images
+        run: docker image prune -a -f
 
   notify-by-telegram:
-    # needs: deploy-to-ec2
+    needs: deploy-to-ec2
     runs-on: ubuntu-latest
     steps:
       - name: Send notification
