@@ -102,7 +102,7 @@ func run(log *zap.Logger) error {
 	var prod = true
 	if prod {
 		hostPolicy := func(ctx context.Context, host string) error {
-			allowedHost := "www.new.bankets.com.ua"
+			allowedHost := "new.bankets.com.ua"
 			if host == allowedHost {
 				return nil
 			}
