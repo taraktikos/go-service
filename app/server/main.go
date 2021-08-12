@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,8 +15,8 @@ import (
 	"github.com/taraktikos/go-service/app/server/handlers"
 	"github.com/taraktikos/go-service/business/data/schema"
 	"github.com/taraktikos/go-service/foundation/logger"
+	"github.com/taraktikos/go-service/foundation/web"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 func main() {
@@ -37,6 +36,10 @@ var favicon []byte
 func run(log *zap.Logger) error {
 	cfg := struct {
 		Web struct {
+			SSL struct {
+				Enabled bool   `conf:"default:false"`
+				FQDN    string `conf:"default:go-service.com"`
+			}
 			APIHost string `conf:"default:0.0.0.0:8080"`
 		}
 		DB struct {
@@ -99,70 +102,10 @@ func run(log *zap.Logger) error {
 	mux.HandleFunc("/", hh.HomePage)
 	mux.HandleFunc("/favicon.ico", faviconHander)
 
-	var prod = true
-	if prod {
-		hostPolicy := func(ctx context.Context, host string) error {
-			allowedHost := "new.bankets.com.ua"
-			if host == allowedHost {
-				return nil
-			}
-			return fmt.Errorf("acme/autocert: only %s host is allowed", allowedHost)
-		}
-
-		m := &autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: hostPolicy,
-			Cache:      autocert.DirCache("."),
-		}
-		httpsServer := &http.Server{
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-			IdleTimeout:  120 * time.Second,
-			Handler:      mux,
-			Addr:         ":443",
-			TLSConfig:    &tls.Config{GetCertificate: m.GetCertificate},
-		}
-		go func() {
-			log.Info("Starting HTTPS server", zap.String("port", httpsServer.Addr))
-			err := httpsServer.ListenAndServeTLS("", "")
-			if err != nil {
-				log.Error("httpsSrv.ListendAndServeTLS() failed", zap.Error(err))
-			}
-		}()
-
-		handleRedirect := func(w http.ResponseWriter, r *http.Request) {
-			newURI := "https://" + r.Host + r.URL.String()
-			http.Redirect(w, r, newURI, http.StatusFound)
-		}
-		muxRedirect := &http.ServeMux{}
-		muxRedirect.HandleFunc("/", handleRedirect)
-
-		httpServer := &http.Server{
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-			IdleTimeout:  120 * time.Second,
-			Handler:      m.HTTPHandler(muxRedirect),
-			Addr:         cfg.Web.APIHost,
-		}
-		log.Info("Starting HTTP server", zap.String("port", cfg.Web.APIHost))
-		err := httpServer.ListenAndServe()
-		if err != nil {
-			log.Error("failed to start server", zap.Error(err))
-		}
+	if cfg.Web.SSL.Enabled {
+		web.StartHttpsServer(mux, cfg.Web.APIHost, log, cfg.Web.SSL.FQDN)
 	} else {
-		httpServer := &http.Server{
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-			IdleTimeout:  120 * time.Second,
-			Handler:      mux,
-			Addr:         cfg.Web.APIHost,
-		}
-
-		log.Info("Starting HTTP server", zap.String("port", cfg.Web.APIHost))
-		err := httpServer.ListenAndServe()
-		if err != nil {
-			log.Error("failed to start server", zap.Error(err))
-		}
+		web.StartHttpServer(mux, cfg.Web.APIHost, log)
 	}
 
 	return nil

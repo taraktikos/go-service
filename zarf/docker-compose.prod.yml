@@ -10,7 +10,7 @@ services:
     volumes:
       - /data:/usr/src/app/data
     environment:
-      - ENV=PROD
+      - GO_SERVICE_WEB_SSL_ENABLED=true
       - GO_SERVICE_DB_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/go-service
     depends_on:
       - postgres
