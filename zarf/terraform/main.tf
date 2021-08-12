@@ -10,7 +10,7 @@ terraform {
 
   backend "s3" {
     bucket = "taras-aws-terraform-state"
-    key    = "terraform.tfstate"
+    key    = "go-service.tfstate"
     region = "eu-central-1"
   }
 }
@@ -21,58 +21,58 @@ provider "aws" {
 }
 
 # 1. Create a VPC
-resource "aws_vpc" "bankets_vpc" {
+resource "aws_vpc" "go_service_vpc" {
   cidr_block = "10.0.0.0/16"
   tags = {
-    Name = "Bankets vpc"
+    Name = "Go Service VPC"
   }
 }
 
 # 2. Create Internet Gateway
-resource "aws_internet_gateway" "bankets_gateway" {
-  vpc_id = aws_vpc.bankets_vpc.id
+resource "aws_internet_gateway" "go_service_gateway" {
+  vpc_id = aws_vpc.go_service_vpc.id
   tags = {
-    Name = "Bankets Internet Gateway"
+    Name = "Go Service Internet Gateway"
   }
 }
 
 # 3. Create Custom Route Table
-resource "aws_route_table" "bankets_route_table" {
-  vpc_id = aws_vpc.bankets_vpc.id
+resource "aws_route_table" "go_service_route_table" {
+  vpc_id = aws_vpc.go_service_vpc.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.bankets_gateway.id
+    gateway_id = aws_internet_gateway.go_service_gateway.id
   }
   route {
     ipv6_cidr_block = "::/0"
-    gateway_id      = aws_internet_gateway.bankets_gateway.id
+    gateway_id      = aws_internet_gateway.go_service_gateway.id
   }
   tags = {
-    Name = "Bankets Route Table"
+    Name = "Go Service Route Table"
   }
 }
 
 # 4. Create a Subnet
-resource "aws_subnet" "bankets_subnet-1" {
-  vpc_id            = aws_vpc.bankets_vpc.id
+resource "aws_subnet" "go_service_subnet-1" {
+  vpc_id            = aws_vpc.go_service_vpc.id
   cidr_block        = "10.0.1.0/24"
   availability_zone = "eu-central-1a"
   tags = {
-    Name = "Bankets subnet 1a"
+    Name = "Go Service Subnet 1a"
   }
 }
 
 # 5. Associate subnet with Route Table
 resource "aws_route_table_association" "a" {
-  subnet_id      = aws_subnet.bankets_subnet-1.id
-  route_table_id = aws_route_table.bankets_route_table.id
+  subnet_id      = aws_subnet.go_service_subnet-1.id
+  route_table_id = aws_route_table.go_service_route_table.id
 }
 
 # 6. Create Security Group to allow port 22, 80,443
-resource "aws_security_group" "bankets_allow_web" {
-  name        = "bankets_allow_web_traffic"
-  description = "Allow web inbound traffic for bankets service"
-  vpc_id      = aws_vpc.bankets_vpc.id
+resource "aws_security_group" "go_service_allow_web" {
+  name        = "go_service_allow_web_traffic"
+  description = "Allow web inbound traffic for go service"
+  vpc_id      = aws_vpc.go_service_vpc.id
 
   ingress {
     description      = "HTTPS"
@@ -110,38 +110,38 @@ resource "aws_security_group" "bankets_allow_web" {
   }
 
   tags = {
-    Name = "Bankets allow web"
+    Name = "Go Service Allow Web"
   }
 }
 
 # 7. Create a network interface with an ip in the subnet that was created in step 4
-resource "aws_network_interface" "bankets_web_server_nic" {
-  subnet_id       = aws_subnet.bankets_subnet-1.id
+resource "aws_network_interface" "go_service_web_server_nic" {
+  subnet_id       = aws_subnet.go_service_subnet-1.id
   private_ips     = ["10.0.1.50"]
-  security_groups = [aws_security_group.bankets_allow_web.id]
+  security_groups = [aws_security_group.go_service_allow_web.id]
 }
 
 # 8. Assign an Elastic IP to the network interface created in step 7
-resource "aws_eip" "bankets_eip" {
+resource "aws_eip" "go_service_eip" {
   vpc                       = true
-  network_interface         = aws_network_interface.bankets_web_server_nic.id
+  network_interface         = aws_network_interface.go_service_web_server_nic.id
   associate_with_private_ip = "10.0.1.50"
-  depends_on                = [aws_internet_gateway.bankets_gateway]
+  depends_on                = [aws_internet_gateway.go_service_gateway]
 }
 
 # 9. Create app server and install docker form install.sh
-resource "aws_instance" "bankets_app_server" {
+resource "aws_instance" "go_service_app_server" {
   ami               = "ami-0453cb7b5f2b7fca2"
   instance_type     = "t2.micro"
   availability_zone = "eu-central-1a"
   key_name          = "taras-aws-thinkpad-x220"
   network_interface {
     device_index         = 0
-    network_interface_id = aws_network_interface.bankets_web_server_nic.id
+    network_interface_id = aws_network_interface.go_service_web_server_nic.id
   }
   user_data = templatefile("install.sh", {ghcr_token = var.ghcr_token})
   tags = {
-    Name = "Bankets app server"
+    Name = "Go Service App Server"
   }
 }
 
@@ -151,5 +151,5 @@ variable "ghcr_token" {
 }
 
 output "server_public_ip" {
-  value = aws_eip.bankets_eip.public_ip
+  value = aws_eip.go_service_eip.public_ip
 }
