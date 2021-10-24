@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-system
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-service-pod 
+  namespace: demo-system
+spec:
+  selector:
+    matchLabels:
+      app: go-service 
+  template:
+    metadata:
+      labels:
+        app: go-service
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: go-service 
+        image: go-service-image
+        ports:
+        - name: http
+          containerPort: 8080
+        readinessProbe: # readiness probes mark the service available to accept traffic.
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 2
+        livenessProbe: # liveness probes mark the service alive or dead (to be restarted).
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 2
+        env:
+        - name: GO_SERVICE_DB_CONNECTION_STRING
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: db_connection_string
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KUBERNETES_PODNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_NAMESPACE_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: KUBERNETES_NODENAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      # metrics container configuration
+      # - name: metrics
+      #   image: metrics-image
+      #   ports:
+      #   - name: metrics
+      #     containerPort: 3001
+      #   - name: metrics-debug
+      #     containerPort: 4001
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-service-service
+  namespace: demo-system
+spec:
+  type: ClusterIP
+  selector:
+    app: go-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

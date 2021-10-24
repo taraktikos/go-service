@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/jmoiron/sqlx"
@@ -13,5 +14,6 @@ type Handler struct {
 }
 
 func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello Tanya"))
+	fmt.Println("test")
+	w.Write([]byte("Go service"))
 }

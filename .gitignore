@@ -1,2 +1,3 @@
 .idea
 zarf/terraform/.terraform
+.DS_Store
